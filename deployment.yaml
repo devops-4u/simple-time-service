@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simpletimeservice
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: simpletimeservice
+  template:
+    metadata:
+      labels:
+        app: simpletimeservice
+    spec:
+      containers:
+      - name: simpletimeservice
+        image: jatin7011/simpletimeservice:latest
+        ports:
+        - containerPort: 5000
