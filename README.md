@@ -273,10 +273,84 @@ kubectl get deployment, svc
 nohup kubectl port-forward deployment/simpletimeservice 5000:5000 > /dev/null 2>&1 &
 curl http://localhost:5000
 ```
+*********************************************************************************
 
+🛠️ Task 3 – GitHub Actions: CI/CD Pipeline
 
+🎯 Pipeline Responsibilities:
+1. ✅ Build and push the Docker image to Docker Hub.
+2. ✅ Run Terraform to provision/update infrastructure in AWS.
 
+➤➤➤ We need to add 🔐Secrets for GitHub Action under Settings → Secrets and variables → Actions 
 
+DOCKERHUB_USERNAME: Docker Hub username
+DOCKERHUB_TOKEN:	Docker Hub access token 
+AWS_ACCESS_KEY_ID:	IAM user access key
+AWS_SECRET_ACCESS_KEY:	IAM user secret key
+
+📄 Workflow File: .github/workflows/main.yml
+
+### ➤✅ `main.yml`
+
+```
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master ]
+
+env:
+  AWS_REGION: ap-south-1
+  IMAGE_NAME: jatin7011/simpletimeservice
+  TF_VERSION: 1.6.0
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: DockerHub Login
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ env.IMAGE_NAME }}:latest
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Format Check
+      run: terraform fmt -check
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Plan
+      run: terraform plan -var="aws_region=${{ env.AWS_REGION }}" -var="cluster_name=simpletimeservice-eks"
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -var="aws_region=${{ env.AWS_REGION }}" -var="cluster_name=simpletimeservice-eks"
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+```
 
 
 
